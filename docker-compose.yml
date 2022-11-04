@@ -7,9 +7,9 @@ services:
     depends_on:
       - freshrss-db
     environment:
-      - PUID=1001
-      - PGID=1001
-      - TZ=America/Chicago
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
     networks:
       - cloudflared
     volumes:
@@ -29,38 +29,12 @@ services:
     volumes:
       - freshrss-db:/var/lib/postgresql/data
 
-  nitter:
-    image: quay.io/unixfox/nitter:latest
-    container_name: nitter
-    depends_on:
-      - freshrss
-      - nitter-redis
-    environment:
-      - REDIS_HOST=nitter-redis
-      - NITTER_HOST=${NITTER_HOST}
-    networks:
-      - cloudflared
-    restart: unless-stopped
-    volumes:
-      - nitter-config:/data
-
-  nitter-redis:
-    image: redis:6-alpine
-    container_name: nitter-redis
-    command: redis-server --save 60 1 --loglevel warning
-    networks:
-      - cloudflared
-    restart: unless-stopped
-    volumes:
-      - nitter-redis:/data
-
   invidious:
     # image: quay.io/invidious/invidious:latest
     image: quay.io/invidious/invidious:latest-arm64 # ARM64/AArch64 devices
     container_name: invidious
-    restart: unless-stopped
-    # ports:
-    #   - "127.0.0.1:3000:3000"
+    depends_on:
+      - invidious-db
     environment:
       # Please read the following file for a comprehensive list of all available
       # configuration options and their associated syntax:
@@ -79,19 +53,13 @@ services:
         # statistics_enabled: false
         admins: [${INVIDIOUS_ADMIN}]
         registration_enabled: false
-    depends_on:
-      - invidious-db
     networks:
       - cloudflared
+    restart: unless-stopped
 
   invidious-db:
     image: docker.io/library/postgres:14
     container_name: invidious-db
-    restart: unless-stopped
-    volumes:
-      - invidious-data:/var/lib/postgresql/data
-      - invidious-config:/config/sql
-      - ../invidious/docker/init-invidious-db.sh:/docker-entrypoint-initdb.d/init-invidious-db.sh
     environment:
       POSTGRES_DB: ${INVIDIOUS_DB_NAME}
       POSTGRES_USER: ${INVIDIOUS_DB_USER}
@@ -100,22 +68,56 @@ services:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
     networks:
       - cloudflared
+    restart: unless-stopped
+    volumes:
+      - invidious-db:/var/lib/postgresql/data
+      # - invidious-config:/config/sql
+      # - ../invidious/docker/init-invidious-db.sh:/docker-entrypoint-initdb.d/init-invidious-db.sh
+
+  nitter:
+    image: quay.io/unixfox/nitter:latest
+    container_name: nitter
+    depends_on:
+      - freshrss
+      - nitter-redis
+    environment:
+      - REDIS_HOST=nitter-redis
+      - NITTER_HOST=${NITTER_HOST}
+    networks:
+      - cloudflared
+    restart: unless-stopped
+    volumes:
+      - ./config/nitter.conf:/data/nitter.conf
+
+  nitter-redis:
+    image: redis:6-alpine
+    container_name: nitter-redis
+    command: redis-server --save 60 1 --loglevel warning
+    networks:
+      - cloudflared
+    restart: unless-stopped
+    volumes:
+      - nitter-redis:/data
 
   daily-backups:
     image: ghcr.io/krimil/freshrss-postgres-backup:master
     container_name: daily-backups
     depends_on:
       - freshrss-db
+      - invidious-db
     environment:
       - TZ
       - BACKUP_DAYS
       - BACKUP_RCLONE_DEST
     restart: always
     volumes:
+      - ../backups:/backups
+      - ./config/rclone.conf:/config/rclone.conf
+      - .env:/.env
       - /var/run/docker.sock:/var/run/docker.sock
-      - daily-backups:/backups
-      - rclone-config:/config
-      - freshrss:/freshrss
+    volumes_from:
+      - freshrss-db
+      - invidious-db
 
 networks:
   cloudflared:
@@ -123,61 +125,8 @@ networks:
 
 volumes:
   daily-backups:
-    driver_opts:
-      type: none
-      o: bind
-      device: $PWD/../../backups
-
-  freshrss:
-    driver_opts:
-      type: none
-      o: bind
-      device: $PWD
-  
   freshrss-config:
-    driver_opts:
-      type: none
-      o: bind
-      device: $PWD/config
-      
   freshrss-db:
-    driver_opts:
-      type: none
-      o: bind
-      device: $PWD/../freshrss-db
-
   freshrss-extensions:
-    driver_opts:
-      type: none
-      o: bind
-      device: $PWD/extensions
-
-  invidious-config:
-    driver_opts:
-      type: none
-      o: bind
-      device: $PWD/../invidious/config/sql
-  
-  invidious-data:
-    driver_opts:
-      type: none
-      o: bind
-      device: $PWD/../invidious/db
-
-  nitter-config:
-    driver_opts:
-      type: none
-      o: bind
-      device: $PWD/../nitter/config
-  
+  invidious-db:
   nitter-redis:
-    driver_opts:
-      type: none
-      o: bind
-      device: $PWD/../nitter-redis
-
-  rclone-config:
-    driver_opts:
-      type: none
-      o: bind
-      device: $PWD/../rclone/config
