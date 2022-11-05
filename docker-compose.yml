@@ -40,9 +40,9 @@ services:
       # https://github.com/iv-org/invidious/blob/master/config/config.example.yml
       INVIDIOUS_CONFIG: |
         db:
-          dbname: invidious
-          user: kemal
-          password: kemal
+          dbname: ${INVIDIOUS_DB_NAME}
+          user: ${INVIDIOUS_DB_USER}
+          password: ${INVIDIOUS_DB_PASS}
           host: invidious-db
           port: 5432
         check_tables: true
