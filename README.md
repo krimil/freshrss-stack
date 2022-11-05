@@ -28,6 +28,18 @@ cp -r aidistan-extensions/xExtension-ThemeModeSynchronizer .
 
 
 ### Restore From Backups
+#### Restore *.conf and .env
+```
+cd /backups
+sudo tar zxvf env_<date>.tar.gz -C ~/docker/freshrss-stack
+sudo tar zxvf confs_<date>.tar.gz -C ~/docker/freshrss-stack
+```
+
+#### Start FreshRSS Stack
+```
+docker compose up -d
+```
+
 #### Restore FreshRSS config volume
 ```
 cd /backups
