@@ -18,6 +18,14 @@ Create rclone.conf file in confs
 Copy .env-template to .env\
 Populate values in .env file
 
+### Install extensions
+```
+docker exec -it freshrss /bin/sh
+cd /config/www/freshrss/extensions
+git clone --depth=1 https://github.com/aidistan/freshrss-extensions.git aidistan-extensions
+cp -r aidistan-extensions/xExtension-ThemeModeSynchronizer .
+```
+
 
 ### Restore From Backups
 #### Restore FreshRSS config volume

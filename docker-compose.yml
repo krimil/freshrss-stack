@@ -14,7 +14,6 @@ services:
       - cloudflared
     volumes:
       - freshrss-config:/config
-      - freshrss-extensions:/config/www/freshrss/extensions
 
   freshrss-db:
     image: postgres:alpine
@@ -72,30 +71,30 @@ services:
     volumes:
       - invidious-db:/var/lib/postgresql/data
 
-  # nitter:
-  #   image: quay.io/unixfox/nitter:latest
-  #   container_name: nitter
-  #   depends_on:
-  #     - freshrss
-  #     - nitter-redis
-  #   environment:
-  #     - REDIS_HOST=nitter-redis
-  #     - NITTER_HOST=${NITTER_HOST}
-  #   networks:
-  #     - cloudflared
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ./confs/nitter.conf:/data/nitter.conf
+  nitter:
+    image: quay.io/unixfox/nitter:latest
+    container_name: nitter
+    depends_on:
+      - freshrss
+      - nitter-redis
+    environment:
+      - REDIS_HOST=nitter-redis
+      - NITTER_HOST=${NITTER_HOST}
+    networks:
+      - cloudflared
+    restart: unless-stopped
+    volumes:
+      - ./confs/nitter.conf:/data/nitter.conf
 
-  # nitter-redis:
-  #   image: redis:6-alpine
-  #   container_name: nitter-redis
-  #   command: redis-server --save 60 1 --loglevel warning
-  #   networks:
-  #     - cloudflared
-  #   restart: unless-stopped
-  #   volumes:
-  #     - nitter-redis:/data
+  nitter-redis:
+    image: redis:6-alpine
+    container_name: nitter-redis
+    command: redis-server --save 60 1 --loglevel warning
+    networks:
+      - cloudflared
+    restart: unless-stopped
+    volumes:
+      - nitter-redis:/data
 
   daily-backups:
     image: ghcr.io/krimil/freshrss-stack-backups:master
@@ -112,7 +111,7 @@ services:
     restart: always
     volumes:
       - /backups:/backups
-      - ./confs/rclone.conf:/confs/rclone.conf
+      - ./confs:/confs
       - .env:/.env
       - /var/run/docker.sock:/var/run/docker.sock
     volumes_from:
@@ -126,6 +125,5 @@ networks:
 volumes:
   freshrss-config:
   freshrss-db:
-  freshrss-extensions:
   invidious-db:
-  # nitter-redis:
+  nitter-redis:
