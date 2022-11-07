@@ -37,6 +37,7 @@ sudo tar zxvf confs_<date>.tar.gz -C ~/docker/freshrss-stack
 
 #### Start FreshRSS Stack
 ```
+cd ~/docker/freshrss-stack
 docker compose up -d
 ```
 
