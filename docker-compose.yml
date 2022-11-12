@@ -12,6 +12,7 @@ services:
       - TZ=${TZ}
     networks:
       - cloudflared
+    restart: unless-stopped
     volumes:
       - freshrss-config:/config
 
